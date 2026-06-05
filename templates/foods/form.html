@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} - 雲端美食{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="form-wrap">
+    <h1 class="form-title">{{ page_title }}</h1>
+
+    {% if form.non_field_errors %}
+      <div class="cf-alert error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3" id="field-{{ field.name }}">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}
+            <ul class="errorlist">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      {% if google_maps_api_key %}
+        {# 互動地圖選點(Google Maps JavaScript API + Places)。無金鑰時整段不顯示,改用上方經緯度數字欄位。 #}
+        <div class="mb-3 map-picker-card">
+          <label class="form-label"><i class="bi bi-geo-alt-fill"></i> 在地圖上標記位置</label>
+          <p class="helptext">在上方「地址」欄輸入店名或地址即可搜尋定位,或直接在地圖點選 / 拖曳大頭針微調。</p>
+          <div id="map-picker"></div>
+          <div id="map-coords" class="map-coords muted">尚未選擇位置</div>
+        </div>
+      {% endif %}
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn-amber">{{ submit_label }}</button>
+        <a href="{% url 'foods:home' %}" class="btn-ghost">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if google_maps_api_key %}
+<script>
+  // Google Maps 互動選點:在地址欄搜尋、點地圖或拖曳大頭針 → 自動填入經緯度
+  function initFoodMapPicker() {
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    const addrInput = document.getElementById('id_address');
+    const mapEl = document.getElementById('map-picker');
+    const coordsEl = document.getElementById('map-coords');
+    if (!mapEl) return;
+
+    // 隱藏原始經緯度數字欄位,改由地圖自動填入(欄位仍存在、仍會送出)
+    ['id_latitude', 'id_longitude'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) { const group = el.closest('.mb-3'); if (group) group.style.display = 'none'; }
+    });
+
+    const TAIPEI = { lat: 25.0330, lng: 121.5654 };
+    const hasInitial = latInput.value && lngInput.value;
+    const start = hasInitial
+      ? { lat: parseFloat(latInput.value), lng: parseFloat(lngInput.value) }
+      : TAIPEI;
+
+    const map = new google.maps.Map(mapEl, {
+      center: start,
+      zoom: hasInitial ? 16 : 12,
+      streetViewControl: false,
+      mapTypeControl: false,
+    });
+
+    let marker = null;
+    function setLocation(latLng) {
+      if (!marker) {
+        marker = new google.maps.Marker({ map: map, position: latLng, draggable: true });
+        marker.addListener('dragend', function (e) { setLocation(e.latLng); });
+      } else {
+        marker.setPosition(latLng);
+      }
+      const lat = latLng.lat(), lng = latLng.lng();
+      latInput.value = lat.toFixed(6);
+      lngInput.value = lng.toFixed(6);
+      coordsEl.textContent = '已標記座標:' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+      coordsEl.classList.remove('muted');
+    }
+
+    // 編輯既有資料時,先還原已存的座標
+    if (hasInitial) setLocation(new google.maps.LatLng(start.lat, start.lng));
+
+    // 點地圖即標記
+    map.addListener('click', function (e) { setLocation(e.latLng); });
+
+    // 地址欄綁定 Places 自動完成:選定地點後定位並回填正式地址
+    if (addrInput && google.maps.places) {
+      // 防止在地址欄按 Enter 直接送出表單;改讓 Enter 用於選取自動完成的建議
+      addrInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+
+      const autocomplete = new google.maps.places.Autocomplete(addrInput, {
+        fields: ['geometry', 'formatted_address'],
+      });
+      autocomplete.addListener('place_changed', function () {
+        const place = autocomplete.getPlace();
+        // 使用者只打字沒選建議時,getPlace() 不會有 geometry
+        if (!place.geometry || !place.geometry.location) {
+          coordsEl.textContent = '找不到「' + addrInput.value + '」的位置,請改在地圖上點選';
+          coordsEl.classList.add('muted');
+          return;
+        }
+        const loc = place.geometry.location;
+        // 優先用地點的可視範圍定位,沒有則退回固定縮放
+        if (place.geometry.viewport) {
+          map.fitBounds(place.geometry.viewport);
+        } else {
+          map.setCenter(loc);
+          map.setZoom(16);
+        }
+        setLocation(loc);
+        if (place.formatted_address) addrInput.value = place.formatted_address;
+      });
+    }
+  }
+</script>
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&language=zh-TW&loading=async&callback=initFoodMapPicker">
+</script>
+{% endif %}
+{% endblock %}

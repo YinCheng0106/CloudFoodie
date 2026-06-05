@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}登入 - 雲端美食{% endblock %}
+
+{% block content %}
+<div class="container auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <i class="bi bi-cloud-fill"></i>
+      <h1 class="auth-title">登入雲端美食</h1>
+      <p class="auth-sub">登入你的帳號,繼續收藏美食</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="cf-alert error">帳號或密碼錯誤,請重新輸入。</div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn-amber w-100 auth-submit">登入</button>
+    </form>
+
+    <p class="auth-foot">還沒有帳號?<a href="{% url 'users:register' %}">前往註冊</a></p>
+  </div>
+</div>
+{% endblock %}

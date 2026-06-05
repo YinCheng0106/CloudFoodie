@@ -1,0 +1,2 @@
+{# 依 value(評分數值)渲染五顆星,實心星數為向下取整 #}
+{% for _ in "12345" %}{% if forloop.counter <= value %}<i class="bi bi-star-fill"></i>{% else %}<i class="bi bi-star"></i>{% endif %}{% endfor %}

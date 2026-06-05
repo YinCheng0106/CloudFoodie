@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}首頁 - 雲端美食{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="container hero-inner">
+    <h1 class="hero-title">個人雲端美食收藏夾</h1>
+    <p class="hero-sub">收藏、整理、分享你最愛的餐廳與美食體驗</p>
+
+    <!-- 搜尋列(T024):關鍵字 + 分類篩選 -->
+    <form method="get" class="search-bar" role="search">
+      <div class="search-field">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ query }}" class="search-input"
+               placeholder="搜尋美食名稱…">
+      </div>
+      <select name="category" class="search-select">
+        <option value="">所有分類</option>
+        {% for value, label in categories %}
+          <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-amber"><i class="bi bi-search"></i> 搜尋</button>
+    </form>
+  </div>
+</section>
+
+<section class="container pb-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="section-title">{% if is_searching %}搜尋結果{% else %}所有美食{% endif %}</h2>
+    {% if user.is_authenticated %}
+      <a href="{% url 'foods:create' %}" class="btn-amber"><i class="bi bi-plus-lg"></i> 新增美食</a>
+    {% endif %}
+  </div>
+
+  {% if is_searching %}
+    <p class="muted mb-4">
+      共找到 {{ foods|length }} 筆結果
+      <a href="{% url 'foods:home' %}" class="clear-search"><i class="bi bi-x-circle"></i> 清除搜尋</a>
+    </p>
+  {% endif %}
+
+  {% if foods %}
+    <div class="food-grid">
+      {% for food in foods %}
+        <a href="{% url 'foods:detail' food.pk %}" class="food-card">
+          <div class="food-card-media">
+            {% if food.image %}
+              <img src="{{ food.image.url }}" alt="{{ food.title }}">
+            {% else %}
+              <div class="food-card-noimg"><i class="bi bi-card-image"></i></div>
+            {% endif %}
+            <span class="cat-tag overlay">{{ food.get_category_display }}</span>
+          </div>
+          <div class="food-card-body">
+            <h3 class="food-card-title">{{ food.title }}</h3>
+            <div class="food-card-rating">
+              {% if food.avg_rating %}
+                <span class="stars">{% include 'foods/_stars.html' with value=food.avg_rating %}</span>
+                <span class="muted">{{ food.avg_rating|floatformat:1 }} ({{ food.review_count }})</span>
+              {% else %}
+                <span class="stars"><i class="bi bi-star"></i></span>
+                <span class="muted">尚無評分</span>
+              {% endif %}
+            </div>
+            <div class="food-card-foot">
+              <i class="bi bi-geo-alt"></i>
+              <span class="loc">{{ food.address|default:"未提供地址" }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% elif is_searching %}
+    <div class="empty-state">
+      <i class="bi bi-search"></i>
+      <p>找不到符合條件的美食</p>
+      <a href="{% url 'foods:home' %}" class="btn-amber"><i class="bi bi-arrow-counterclockwise"></i> 清除搜尋條件</a>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-bookmark-heart"></i>
+      <p>目前還沒有任何美食收藏</p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'foods:create' %}" class="btn-amber"><i class="bi bi-plus-lg"></i> 新增第一筆美食</a>
+      {% else %}
+        <a href="{% url 'users:login' %}" class="btn-amber">登入後開始收藏</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

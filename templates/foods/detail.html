@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ food.title }} - 雲端美食{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <a href="{% url 'foods:home' %}" class="back-link"><i class="bi bi-arrow-left"></i> 返回首頁</a>
+
+  <div class="detail-grid mt-3">
+    <!-- 左:大圖 -->
+    <div class="detail-media">
+      {% if food.image %}
+        <img src="{{ food.image.url }}" alt="{{ food.title }}">
+      {% else %}
+        <div class="food-card-noimg lg"><i class="bi bi-card-image"></i></div>
+      {% endif %}
+    </div>
+
+    <!-- 右:資訊 -->
+    <div class="detail-info">
+      <span class="cat-tag">{{ food.get_category_display }}</span>
+      <h1 class="detail-title">{{ food.title }}</h1>
+      <div class="detail-rating">
+        {% if avg_rating %}
+          <span class="stars">{% include 'foods/_stars.html' with value=avg_rating %}</span>
+          <span class="rating-num">{{ avg_rating|floatformat:1 }}</span>
+          <span class="muted">({{ review_count }} 則評論)</span>
+        {% else %}
+          <i class="bi bi-star"></i><span class="muted">尚無評分</span>
+        {% endif %}
+      </div>
+
+      <div class="info-card">
+        <h3 class="info-card-title"><i class="bi bi-geo-alt"></i> 地點資訊</h3>
+        <p class="info-row">{{ food.address|default:"未提供地址" }}</p>
+        {% if map_embed_url %}
+          <div class="map-embed">
+            <iframe src="{{ map_embed_url }}" loading="lazy" allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title="{{ food.title }} 的地圖位置"></iframe>
+          </div>
+          <a href="{{ map_link_url }}" target="_blank" rel="noopener" class="btn-ghost map-btn">
+            <i class="bi bi-map"></i> 在 Google Maps 開啟
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="info-card">
+        <h3 class="info-card-title"><i class="bi bi-journal-text"></i> 個人筆記</h3>
+        <p class="note-text">{{ food.note|default:"(尚無筆記)"|linebreaksbr }}</p>
+      </div>
+
+      {# AI 摘要卡片(T030):有摘要時所有人可見;建立者另可產生 / 重新產生 #}
+      {% if food.ai_summary or gemini_enabled and user == food.user %}
+        <div class="info-card ai-card">
+          <h3 class="info-card-title"><i class="bi bi-stars"></i> AI 摘要</h3>
+          {% if food.ai_summary %}
+            <p class="ai-summary-text">{{ food.ai_summary }}</p>
+          {% else %}
+            <p class="muted">尚未產生摘要。{% if not food.note %}請先填寫個人筆記。{% endif %}</p>
+          {% endif %}
+          {% if gemini_enabled and user == food.user and food.note %}
+            <form method="post" action="{% url 'foods:summary' food.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-ghost ai-btn">
+                <i class="bi bi-magic"></i> {% if food.ai_summary %}重新產生摘要{% else %}產生 AI 摘要{% endif %}
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="detail-meta">由 {{ food.user.username }} 收藏於 {{ food.created_at|date:"Y/m/d" }}</div>
+
+      {% if user == food.user %}
+        <div class="detail-actions">
+          <a href="{% url 'foods:edit' food.pk %}" class="btn-ghost"><i class="bi bi-pencil"></i> 編輯內容</a>
+          <a href="{% url 'foods:delete' food.pk %}" class="btn-danger-ghost"><i class="bi bi-trash"></i> 刪除</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 評論區塊(T018 表單 / T019 列表 / T021 權限) -->
+  <section class="reviews-section">
+    <h2 class="section-title">評論{% if review_count %} <span class="muted" style="font-weight:400">({{ review_count }})</span>{% endif %}</h2>
+
+    {# 撰寫評論:僅登入者可見(T018) #}
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'reviews:create' food.pk %}" class="review-form">
+        {% csrf_token %}
+        <div class="rf-rating">
+          <label class="form-label" for="{{ review_form.rating.id_for_label }}">評分</label>
+          {{ review_form.rating }}
+        </div>
+        <div class="rf-content">
+          <label class="form-label" for="{{ review_form.content.id_for_label }}">評論內容</label>
+          {{ review_form.content }}
+        </div>
+        <div class="mt-3">
+          <button type="submit" class="btn-amber"><i class="bi bi-send"></i> 送出評論</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="cf-alert info">請先 <a href="{% url 'users:login' %}">登入</a> 後再撰寫評論。</div>
+    {% endif %}
+
+    {# 評論列表(T019) #}
+    {% if reviews %}
+      <div class="review-list">
+        {% for review in reviews %}
+          <article class="review-card">
+            <div class="review-head">
+              <div class="review-author">
+                <span class="avatar">{{ review.user.username|first|upper }}</span>
+                <div>
+                  <div class="review-name">{{ review.user.username }}</div>
+                  <div class="review-date">{{ review.created_at|date:"Y/m/d H:i" }}</div>
+                </div>
+              </div>
+              <div class="review-stars">
+                {% include 'foods/_stars.html' with value=review.rating %}
+                <span class="rating-num">{{ review.rating|floatformat:1 }}</span>
+              </div>
+            </div>
+            <p class="review-content">{{ review.content|linebreaksbr }}</p>
+            {% if user == review.user %}
+              <div class="review-actions">
+                <a href="{% url 'reviews:edit' review.pk %}" class="rev-link"><i class="bi bi-pencil"></i> 編輯</a>
+                <a href="{% url 'reviews:delete' review.pk %}" class="rev-link danger"><i class="bi bi-trash"></i> 刪除</a>
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state sm">
+        <i class="bi bi-chat-square-text"></i>
+        <p>目前還沒有評論,成為第一個分享的人吧!</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
