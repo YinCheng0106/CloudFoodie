@@ -12,8 +12,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <!-- 導覽列 -->
-  <nav class="cf-navbar">
+<nav class="cf-navbar">
     <div class="container d-flex align-items-center justify-content-between py-2">
       <a href="{% url 'foods:home' %}" class="brand">
         <i class="bi bi-cloud-fill"></i> 雲端美食
@@ -34,23 +33,17 @@
       </div>
     </div>
   </nav>
-
-  <!-- 系統訊息 -->
-  {% if messages %}
+{% if messages %}
     <div class="cf-messages">
       {% for message in messages %}
         <div class="cf-alert {{ message.tags }}">{{ message }}</div>
       {% endfor %}
     </div>
   {% endif %}
-
-  <!-- 主要內容 -->
-  <main>
+<main>
     {% block content %}{% endblock %}
   </main>
-
-  <!-- 頁尾 -->
-  <footer class="cf-footer">
+<footer class="cf-footer">
     雲端美食 Cloud Foodie ・ 個人美食收藏與社群評論平台
   </footer>
 

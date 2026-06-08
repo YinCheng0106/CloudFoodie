@@ -2,9 +2,7 @@ from django import forms
 
 from .models import Food
 
-
 class FoodForm(forms.ModelForm):
-    """新增 / 編輯美食表單。座標 latitude/longitude 為選填,用於詳細頁顯示 Google 地圖。"""
 
     class Meta:
         model = Food
@@ -24,6 +22,6 @@ class FoodForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 套上 Bootstrap 樣式:下拉選單用 form-select,其餘用 form-control
+
         for name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-select' if name == 'category' else 'form-control'

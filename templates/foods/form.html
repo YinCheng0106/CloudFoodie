@@ -24,7 +24,6 @@
       {% endfor %}
 
       {% if google_maps_api_key %}
-        {# 互動地圖選點(Google Maps JavaScript API + Places)。無金鑰時整段不顯示,改用上方經緯度數字欄位。 #}
         <div class="mb-3 map-picker-card">
           <label class="form-label"><i class="bi bi-geo-alt-fill"></i> 在地圖上標記位置</label>
           <p class="helptext">在上方「地址」欄輸入店名或地址即可搜尋定位,或直接在地圖點選 / 拖曳大頭針微調。</p>
@@ -45,7 +44,6 @@
 {% block extra_js %}
 {% if google_maps_api_key %}
 <script>
-  // Google Maps 互動選點:在地址欄搜尋、點地圖或拖曳大頭針 → 自動填入經緯度
   function initFoodMapPicker() {
     const latInput = document.getElementById('id_latitude');
     const lngInput = document.getElementById('id_longitude');
@@ -54,7 +52,6 @@
     const coordsEl = document.getElementById('map-coords');
     if (!mapEl) return;
 
-    // 隱藏原始經緯度數字欄位,改由地圖自動填入(欄位仍存在、仍會送出)
     ['id_latitude', 'id_longitude'].forEach(function (id) {
       const el = document.getElementById(id);
       if (el) { const group = el.closest('.mb-3'); if (group) group.style.display = 'none'; }
@@ -88,15 +85,11 @@
       coordsEl.classList.remove('muted');
     }
 
-    // 編輯既有資料時,先還原已存的座標
     if (hasInitial) setLocation(new google.maps.LatLng(start.lat, start.lng));
 
-    // 點地圖即標記
     map.addListener('click', function (e) { setLocation(e.latLng); });
 
-    // 地址欄綁定 Places 自動完成:選定地點後定位並回填正式地址
     if (addrInput && google.maps.places) {
-      // 防止在地址欄按 Enter 直接送出表單;改讓 Enter 用於選取自動完成的建議
       addrInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') e.preventDefault();
       });
@@ -106,14 +99,12 @@
       });
       autocomplete.addListener('place_changed', function () {
         const place = autocomplete.getPlace();
-        // 使用者只打字沒選建議時,getPlace() 不會有 geometry
         if (!place.geometry || !place.geometry.location) {
           coordsEl.textContent = '找不到「' + addrInput.value + '」的位置,請改在地圖上點選';
           coordsEl.classList.add('muted');
           return;
         }
         const loc = place.geometry.location;
-        // 優先用地點的可視範圍定位,沒有則退回固定縮放
         if (place.geometry.viewport) {
           map.fitBounds(place.geometry.viewport);
         } else {

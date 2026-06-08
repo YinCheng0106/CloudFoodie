@@ -2,11 +2,8 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-
 class Food(models.Model):
-    """使用者收藏的美食記錄"""
 
-    # 美食分類選項(資料庫存英文 key,介面顯示繁體中文)
     CATEGORY_CHOICES = [
         ('chinese', '中式'),
         ('japanese', '日式'),
@@ -30,7 +27,7 @@ class Food(models.Model):
     address = models.CharField('地址', max_length=255, blank=True)
     note = models.TextField('個人筆記', blank=True)
     image = models.ImageField('照片', upload_to='foods/', blank=True, null=True)
-    # 經緯度加上地理範圍驗證,避免送出 999 這類無效座標(T038 輸入驗證)
+
     latitude = models.FloatField(
         '緯度',
         blank=True,
@@ -43,7 +40,7 @@ class Food(models.Model):
         null=True,
         validators=[MinValueValidator(-180), MaxValueValidator(180)],
     )
-    ai_summary = models.TextField('AI 摘要', blank=True)  # 由 Gemini 依個人筆記產生
+    ai_summary = models.TextField('AI 摘要', blank=True)
     created_at = models.DateTimeField('建立時間', auto_now_add=True)
 
     class Meta:

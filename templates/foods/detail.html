@@ -6,7 +6,6 @@
   <a href="{% url 'foods:home' %}" class="back-link"><i class="bi bi-arrow-left"></i> 返回首頁</a>
 
   <div class="detail-grid mt-3">
-    <!-- 左:大圖 -->
     <div class="detail-media">
       {% if food.image %}
         <img src="{{ food.image.url }}" alt="{{ food.title }}">
@@ -15,7 +14,6 @@
       {% endif %}
     </div>
 
-    <!-- 右:資訊 -->
     <div class="detail-info">
       <span class="cat-tag">{{ food.get_category_display }}</span>
       <h1 class="detail-title">{{ food.title }}</h1>
@@ -49,7 +47,6 @@
         <p class="note-text">{{ food.note|default:"(尚無筆記)"|linebreaksbr }}</p>
       </div>
 
-      {# AI 摘要卡片(T030):有摘要時所有人可見;建立者另可產生 / 重新產生 #}
       {% if food.ai_summary or gemini_enabled and user == food.user %}
         <div class="info-card ai-card">
           <h3 class="info-card-title"><i class="bi bi-stars"></i> AI 摘要</h3>
@@ -80,11 +77,9 @@
     </div>
   </div>
 
-  <!-- 評論區塊(T018 表單 / T019 列表 / T021 權限) -->
   <section class="reviews-section">
     <h2 class="section-title">評論{% if review_count %} <span class="muted" style="font-weight:400">({{ review_count }})</span>{% endif %}</h2>
 
-    {# 撰寫評論:僅登入者可見(T018) #}
     {% if user.is_authenticated %}
       <form method="post" action="{% url 'reviews:create' food.pk %}" class="review-form">
         {% csrf_token %}
@@ -104,7 +99,6 @@
       <div class="cf-alert info">請先 <a href="{% url 'users:login' %}">登入</a> 後再撰寫評論。</div>
     {% endif %}
 
-    {# 評論列表(T019) #}
     {% if reviews %}
       <div class="review-list">
         {% for review in reviews %}

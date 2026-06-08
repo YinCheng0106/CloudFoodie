@@ -6,9 +6,7 @@ from django.db import models
 
 from foods.models import Food
 
-
 class Review(models.Model):
-    """使用者對美食的評論與評分(評分範圍 1.0 ~ 5.0)"""
 
     food = models.ForeignKey(
         Food,

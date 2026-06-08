@@ -1,15 +1,3 @@
-"""建立示範用種子資料,方便課堂展示與截圖。
-
-特性:
-  - 可重複執行:全部用 get_or_create,不會產生重複資料。
-  - 與真實資料隔離:示範使用者一律以 demo_ 開頭,美食標題不與現有資料重複,
-    因此不會更動到 YinCheng 等真實帳號的資料。
-  - 提供 --clear 旗標,只清除示範資料(demo_ 開頭的使用者及其關聯美食/評論)。
-
-用法:
-    python manage.py seed_demo          # 建立示範資料
-    python manage.py seed_demo --clear  # 清除示範資料後重新建立
-"""
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -21,15 +9,12 @@ from reviews.models import Review
 
 DEMO_PASSWORD = 'demopass123'
 
-# 示範使用者(username, 顯示用暱稱)
 DEMO_USERS = [
     ('demo_amy', 'amy@example.com'),
     ('demo_ken', 'ken@example.com'),
     ('demo_lin', 'lin@example.com'),
 ]
 
-# 示範美食:刻意涵蓋多種分類,方便展示搜尋與分類篩選。
-# owner / reviews 皆指向示範使用者(demo_ 開頭),與真實資料完全隔離。
 DEMO_FOODS = [
     {
         'title': '鼎泰豐(信義店)',
@@ -105,7 +90,6 @@ DEMO_FOODS = [
     },
 ]
 
-
 class Command(BaseCommand):
     help = '建立示範用種子資料(使用者、美食、評論),方便展示與截圖。'
 
@@ -122,7 +106,6 @@ class Command(BaseCommand):
             deleted, _ = User.objects.filter(username__startswith='demo_').delete()
             self.stdout.write(self.style.WARNING(f'已清除示範資料(含關聯共 {deleted} 筆物件)。'))
 
-        # 1. 建立示範使用者
         users = {}
         for username, email in DEMO_USERS:
             user, created = User.objects.get_or_create(
@@ -134,7 +117,6 @@ class Command(BaseCommand):
             users[username] = user
             self.stdout.write(('  ＋ 建立' if created else '  ・ 已存在') + f' 使用者 {username}')
 
-        # 2. 建立示範美食與評論
         food_created = review_created = 0
         for data in DEMO_FOODS:
             owner = users[data['owner']]
